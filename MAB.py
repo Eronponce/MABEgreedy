@@ -71,25 +71,11 @@ def mostraTabela(bracosDisponiveis):
 }).set_index(['Braço referente']))
 
 def MostrarInfo(allRewards, quantidadeBracos):
-  # create a list of column names for the DataFrame
-  column_names = [f"Arm {i+1}" for i in range(quantidadeBracos)]
-
-  # create a list to store the rewards for each arm at each time step
-  reward_data = [[] for _ in range(quantidadeBracos)]
-
-  # loop through the nested list of rewards and extract the rewards for each arm at each time step
-  for arm_rewards in allRewards:
-      for i, reward in enumerate(arm_rewards):
-          if reward is not None:
-              reward_data[i].append(reward[1])
-          else:
-              reward_data[i].append(None)
-
-  # create a pandas DataFrame with the reward data
-  reward_df = pd.DataFrame(reward_data, columns=column_names)
-
-  # display the DataFrame
-  st.line_chart(reward_df)
+    reward_data = {}
+    for i in range(quantidadeBracos):
+        reward_data[f"Braço {i+1}"] = allRewards[i]
+    df = pd.DataFrame(reward_data)
+    st.dataframe(df)
 
 
 

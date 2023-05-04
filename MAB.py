@@ -24,7 +24,7 @@ def mab(bracos,execucoes,epsilon):
     #instancia array de recompensas determinando cada braço
     rewards = [0] * bracos
     choicesArms = [0] * bracos
-    allRewards = [None] * bracos
+    allRewards = [[] for _ in range(bracos)]
     #Em cada execução ele gera um numero aleatorio conforme o 
     # epsilon e armazena a soma em rewards[]
     for i in range(execucoes):

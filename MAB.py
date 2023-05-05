@@ -73,76 +73,50 @@ def mostraTabela(bracosDisponiveis):
     'Valor maximo': coluna3,
 }).set_index(['Braço referente']))
 
-def mostraDados(reward,choices,allrewards):
-  st.write("### Frequência de recompensas")
-  df = pd.DataFrame(allrewards).T
-  df.columns = [f"Braço {i+1}" for i in range(len(allrewards))]
+def pieChart(choices):
+  st.write("### Media, Moda, Mediana dos braços")
+  df = pd.DataFrame(choices).T
+  df.columns = [f"Braço {i+1}" for i in range(len(choices))]
   df.index.name = "Execução"
-  st.line_chart(df)
-  
+  st.dataframe(df)
   # Define a custom function to format the value labels
   def format_autopct(value):
       if value == 0:
           return ''
       else:
           return '%1.1f%%' % value
-
   # Get the non-zero choices and their corresponding labels
   non_zero_choices = [choice for choice in choices if choice != 0]
   non_zero_labels = [label for choice, label in zip(choices, df.columns) if choice != 0]
-
   # Create the pie chart
   fig1, ax1 = plt.subplots(facecolor='none')
-
-  # Find the index of the largest non-zero choice
+   # Find the index of the largest non-zero choice
   max_choice = max(choices)
   explode_index = choices.index(max_choice)
-
-  # Create a list of values for the explode parameter
-  explode = [0] * len(choices)
+  # Create a list of values for the explode parameter7
+  explode = [0] * len(non_zero_choices)
   explode[explode_index] = 0.1
-  st.write(ex)
-  ax1.pie(non_zero_choices, labels=non_zero_labels, autopct=format_autopct, textprops={'color': 'white'}, explode=explode)
+  colours1 = ['cyan','blue','#f0a1a2','red','#7defa1','#ffd16a','yellow','orange','purple']
+
+  ax1.pie(non_zero_choices, labels=non_zero_labels, autopct=format_autopct, textprops={'color': 'white'}, explode=explode,colors=colours1)
   ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
   st.pyplot(fig1)
-
-
-  #Traceback (most recent call last):
-  File "C:\Users\eronp\.conda\envs\MABEgreedy\lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 565, in _run_script
-    exec(code, module.__dict__)
-  File "C:\Users\eronp\.conda\envs\MABEgreedy\MAB.py", line 148, in <module>
-    mostraDados(rewards,choicesArms,allRewards)
-  File "C:\Users\eronp\.conda\envs\MABEgreedy\MAB.py", line 105, in mostraDados
-    ax1.pie(non_zero_choices, labels=non_zero_labels, autopct=format_autopct, textprops={'color': 'white'}, explode=explode)
-  File "C:\Users\eronp\.conda\envs\MABEgreedy\lib\site-packages\matplotlib\__init__.py", line 1472, in inner
-    return func(ax, *map(sanitize_sequence, args), **kwargs)
-  File "C:\Users\eronp\.conda\envs\MABEgreedy\lib\site-packages\matplotlib\axes\_axes.py", line 3211, in pie
-    raise ValueError("'explode' must be of length 'x'")
-
-  # Create a DataFrame from the reward data
-  df = pd.DataFrame(reward).T
-  df.columns = [f"Braço {i+1}" for i in range(len(reward))]
+  
+def frequency(choices,allrewards):
+  st.write("### Frequência de recompensas")
+  df = pd.DataFrame(allrewards).T
+  df.columns = [f"Braço {i+1}" for i in range(len(allrewards))]
   df.index.name = "Execução"
+  st.line_chart(df)
 
-  # Create a bar chart of the average reward for each arm
-  plt.bar(df.columns, df.values[0])
-
-  # Set chart title and axis labels
-  plt.title("Recompensa média de cada braço")
-  plt.xlabel("Braços")
-  plt.ylabel("Recompensa média")
-
-  # Display the chart
-  st.write(plt.show())
+def averages(choices):
+  st.write("### Média,Moda,Mediana das Escolhas")
+  df = pd.DataFrame(choices).T
+  df.columns = [f"Braço {i+1}" for i in range(len(choices))]
+  df.index.name = "Execução"
   
-  st.write(np.median(reward))
-
-
-
-  
-
- 
+  st.dataframe(df)
 
 
 st.sidebar.title("Configurar MAB")
@@ -155,4 +129,6 @@ if st.sidebar.button("Executar mab com braços com ranges aleatórios"):
   fakeRewards = fakeArm(quantidadeBracos,maxReward)            
   rewards,choicesArms,allRewards = mab(quantidadeBracos,execucoes,epsilon)
   mostraTabela(fakeRewards)
-  mostraDados(rewards,choicesArms,allRewards)
+  frequency(choicesArms,allRewards)
+  pieChart(choicesArms)
+  averages(choicesArms)

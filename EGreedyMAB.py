@@ -1,19 +1,19 @@
 import streamlit as st
-import random as rand
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import statistics
+import random as rand
 
 
-#percore pelo numero de braços criando falsos braços, onde cada   
+#Percore pelo numero de braços criando falsos braços, onde cada   
 # um tem um range possivel de recompensar o usuário
 class Arm:
   def __init__(self,bracos,maxReward):
-     self.bracos = bracos
-     self.maxReward = maxReward
-     self.fakeRewards = []
-     
+    self.bracos = bracos
+    self.maxReward = maxReward
+    self.fakeRewards = []
+      
   def CreateArms(self):
     fakeArms = []
     for i in range(self.bracos):
@@ -25,28 +25,30 @@ class Arm:
       fakeArms.append(rewardRange)
     self.fakeRewards =fakeArms
     return(fakeArms)
-  
+
   def GetMakespan(self,arm):
     return rand.uniform(self.fakeRewards[arm][0],self.fakeRewards[arm][1])
-
-
-
+  
 
 #retorna uma recompensa falsa como se fosse o operador genetico
 class EgreedyMAB:
-  def __init__(self,Arms,bracos,execucoes,epsilon):
-     self.Arms = Arms
-     self.bracos = bracos
-     self.execucoes = execucoes
-     self.epsilon = epsilon
+  def __init__(self,Arms,bracos,execucoes,epsilon,maxReward):
+    self.bracos = bracos
+    self.Arms = Arms
+    self.execucoes = execucoes
+    self.epsilon = epsilon
+    self.maxReward = maxReward
      
+
   def execute(self):
     #cria uma variavel para a primeira iteração
     firstInteraction = True
     #instancia array de recompensas determinando cada braço
     rewards = [0] * self.bracos
     choicesArms = [0] * self.bracos
+    regret = [[] for _ in range(self.bracos)] 
     allRewards = [[] for _ in range(self.bracos)]
+    
     #Em cada execução ele gera um numero aleatorio conforme o 
     # epsilon e armazena a soma em rewards[]
     for i in range(self.execucoes):
@@ -60,7 +62,14 @@ class EgreedyMAB:
         else:
     
           armChoosen = rand.randrange(len(rewards))
-      
+
+        # calculate regret for each arm
+      expected_rewards = [rewards[i] if choicesArms[i] > 0 else 0 for i in range(self.bracos)]
+      best_reward = max(expected_rewards)
+      for i in range(self.bracos):
+        if i == armChoosen:
+          regret[i].append(best_reward - expected_rewards[i])
+
       tempReward = Arm.GetMakespan(self.Arms,armChoosen)
       tempSum =(rewards[armChoosen] +tempReward)/2
 
@@ -77,16 +86,8 @@ class EgreedyMAB:
         else:
          
           allRewards[i].append((rewards[i]))
-        
-    
-    return(rewards,choicesArms,allRewards)
-
-
-        
-
-#streamlit
-
-
+    return(rewards,choicesArms,allRewards,regret,fakeRewards)
+  
 #mostra a tabela com as escolha dos braços
 def mostraTabela(bracosDisponiveis):
   coluna1= []
@@ -125,20 +126,19 @@ def pieChart(choices):
   
   colours1 = ['cyan','#6699fc','#f0a1a2','#fd266f','#7defa1','#ffd16a','yellow','orange','purple']
   
-  ax1.pie(non_zero_choices, labels=non_zero_labels, autopct=format_autopct, textprops={'color': 'black'}, colors=colours1)
+  ax1.pie(non_zero_choices, labels=non_zero_labels, autopct=format_autopct, textprops={'color': 'black'}, colors=colours1,wedgeprops={"edgecolor":"k",'linewidth': 1,'linestyle': '-'})
   ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
   st.pyplot(fig1)
   
 def frequency(allRewards):
-  
   st.write("### Frequência de recompensas")
   df = pd.DataFrame(allRewards).T
   df.columns = [f"Braço {i+1}" for i in range(len(allRewards))]
   df.index.name = "Execução"
   st.line_chart(df)
 
-def averages(rewards,allRewards):
+def averages(rewards,allRewards,regret):
  # transforma em int para encontrar moda media e mediana
   allRewards = [[int(val) for val in sublist] for sublist in allRewards]
   modas = []
@@ -162,7 +162,10 @@ def averages(rewards,allRewards):
   df.loc["Mediana"] = medianas
   df.loc["Moda"] = modas
   df.loc["Desvio Padrão"] = std_devs
-  df.loc["Regret"] = 'esss'
+  regretSomado =[]
+  for valores in regret:
+    regretSomado.append(sum(valores))
+  df.loc["Regret"] = regretSomado
   st.dataframe(df)
 
 
@@ -177,10 +180,10 @@ quantidadeBracos = st.sidebar.number_input("Quantidade de braços",min_value= 1,
 if st.sidebar.button("Executar mab com braços com ranges aleatórios"):
   Arms = Arm(quantidadeBracos,maxReward)  
   fakeRewards = Arm.CreateArms(Arms)   
-  mabClass = EgreedyMAB(Arms,quantidadeBracos,execucoes,epsilon)
-  rewards,choicesArms,allRewards = EgreedyMAB.execute(mabClass)
+  mabClass = EgreedyMAB(Arms,quantidadeBracos,execucoes,epsilon,maxReward)
+  rewards,choicesArms,allRewards,regret,fakeRewards = EgreedyMAB.execute(mabClass)
   mostraTabela(fakeRewards)
-  averages(rewards,allRewards)
+  averages(rewards,allRewards,regret)
   frequency(allRewards)
   pieChart(choicesArms)
   

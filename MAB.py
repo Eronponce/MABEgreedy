@@ -12,7 +12,7 @@ class Arm:
   def __init__(self,bracos,maxReward):
      self.bracos = bracos
      self.maxReward = maxReward
-     self.fakeRewards = Arm.CreateArms(self)
+     self.fakeRewards = []
      
   def CreateArms(self):
     fakeArms = []
@@ -23,16 +23,17 @@ class Arm:
       rewardRange.append(randomNumber1)
       rewardRange.append(randomNumber2)
       fakeArms.append(rewardRange)
-    return (fakeArms)
+    self.fakeRewards =fakeArms
+    return(fakeArms)
   
   def GetMakespan(self,arm):
     return rand.uniform(self.fakeRewards[arm][0],self.fakeRewards[arm][1])
 
-Arms = Arm(10,10)
-st.write(Arm.GetMakespan(Arms,3))
+
+
 
 #retorna uma recompensa falsa como se fosse o operador genetico
-class MAB:
+class EgreedyMAB:
   def __init__(self,Arms,bracos,execucoes,epsilon):
      self.Arms = Arms
      self.bracos = bracos
@@ -49,27 +50,38 @@ class MAB:
     #Em cada execução ele gera um numero aleatorio conforme o 
     # epsilon e armazena a soma em rewards[]
     for i in range(self.execucoes):
-      randomNumber = rand.uniform(0,self.epsilon)
+      randomNumber = rand.uniform(0,1)
       if firstInteraction:
         armChoosen = rand.randint(0,self.bracos-1)
         firstInteraction = False
       else:
-        if randomNumber < self.epsilon:
-          armChoosen = rand.randint(0,self.bracos-1)
-        else:
+        if randomNumber > self.epsilon:  
           armChoosen = np.argmax(rewards)
+        else:
+    
+          armChoosen = rand.randrange(len(rewards))
+      
       tempReward = Arm.GetMakespan(self.Arms,armChoosen)
       tempSum =(rewards[armChoosen] +tempReward)/2
+
       #Guarda media das recompensas
       rewards[armChoosen] = tempSum
       #Guarda quantas vezes braço foi puxado
       choicesArms[armChoosen] += 1
       #Guarda todas as recompensas coletadas
-      allRewards[armChoosen].append(tempSum)
+      
+      for i in range(self.bracos):
+        
+        if i == armChoosen:
+          allRewards[armChoosen].append(tempSum)
+        else:
+         
+          allRewards[i].append((rewards[i]))
+        
+    
     return(rewards,choicesArms,allRewards)
 
-mabClass = MAB(Arms,10,10,0.5)
-st.code(MAB.execute(mabClass))
+
         
 
 #streamlit
@@ -109,26 +121,21 @@ def pieChart(choices):
   non_zero_choices = [choice for choice in choices if choice != 0]
   non_zero_labels = [label for choice, label in zip(choices, df.columns) if choice != 0]
   # Create the pie chart
-  fig1, ax1 = plt.subplots(facecolor='none')
-   # Find the index of the largest non-zero choice
-  max_choice = max(choices)
-  explode_index = choices.index(max_choice)
-  # Create a list of values for the explode parameter7
-  explode = [0] * len(non_zero_choices)
-  explode[explode_index] = 0.1
-  colours1 = ['cyan','blue','#f0a1a2','red','#7defa1','#ffd16a','yellow','orange','purple']
-
-  ax1.pie(non_zero_choices, labels=non_zero_labels, autopct=format_autopct, textprops={'color': 'white'}, explode=explode,colors=colours1)
+  fig1, ax1 = plt.subplots(facecolor='white')
+  
+  colours1 = ['cyan','#6699fc','#f0a1a2','#fd266f','#7defa1','#ffd16a','yellow','orange','purple']
+  
+  ax1.pie(non_zero_choices, labels=non_zero_labels, autopct=format_autopct, textprops={'color': 'black'}, colors=colours1)
   ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
   st.pyplot(fig1)
   
-def frequency(choices,allrewards):
+def frequency(allRewards):
+  
   st.write("### Frequência de recompensas")
-  df = pd.DataFrame(allrewards).T
-  df.columns = [f"Braço {i+1}" for i in range(len(allrewards))]
+  df = pd.DataFrame(allRewards).T
+  df.columns = [f"Braço {i+1}" for i in range(len(allRewards))]
   df.index.name = "Execução"
-
   st.line_chart(df)
 
 def averages(rewards,allRewards):
@@ -156,11 +163,11 @@ def averages(rewards,allRewards):
   df.loc["Moda"] = modas
   df.loc["Desvio Padrão"] = std_devs
   df.loc["Regret"] = 'esss'
-  st.write(df)
+  st.dataframe(df)
 
 
 st.sidebar.title("Configurar MAB")
-epsilon =  st.sidebar.slider("Epsilon",0.0,1.0)
+epsilon =  st.sidebar.slider("Epsilon",0.01,1.0)
 st.title("MAB em funcionamento")
 execucoes = st.sidebar.number_input("numeros de execuções",min_value= 1,step=1)
 maxReward = st.sidebar.number_input("Maximo de recompensa",min_value= 1,step=1)
@@ -168,10 +175,12 @@ quantidadeBracos = st.sidebar.number_input("Quantidade de braços",min_value= 1,
 
 
 if st.sidebar.button("Executar mab com braços com ranges aleatórios"):
-  fakeRewards = fakeArm(quantidadeBracos,maxReward)            
-  rewards,choicesArms,allRewards = mab(quantidadeBracos,execucoes,epsilon)
+  Arms = Arm(quantidadeBracos,maxReward)  
+  fakeRewards = Arm.CreateArms(Arms)   
+  mabClass = EgreedyMAB(Arms,quantidadeBracos,execucoes,epsilon)
+  rewards,choicesArms,allRewards = EgreedyMAB.execute(mabClass)
   mostraTabela(fakeRewards)
   averages(rewards,allRewards)
-  frequency(choicesArms,allRewards)
+  frequency(allRewards)
   pieChart(choicesArms)
   

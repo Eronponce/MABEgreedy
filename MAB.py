@@ -3,53 +3,73 @@ import random as rand
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import statistics
+
 
 #percore pelo numero de braços criando falsos braços, onde cada   
 # um tem um range possivel de recompensar o usuário
-def fakeArm(bracos,maxReward):
-  fakeArms = []
-  for i in range(bracos):
-    rewardRange = []
-    randomNumber1 = rand.uniform(0,maxReward)
-    randomNumber2 = rand.uniform(randomNumber1,maxReward)
-    rewardRange.append(randomNumber1)
-    rewardRange.append(randomNumber2)
-    fakeArms.append(rewardRange)
-  return (fakeArms)
+class Arm:
+  def __init__(self,bracos,maxReward):
+     self.bracos = bracos
+     self.maxReward = maxReward
+     self.fakeRewards = Arm.CreateArms(self)
+     
+  def CreateArms(self):
+    fakeArms = []
+    for i in range(self.bracos):
+      rewardRange = []
+      randomNumber1 = rand.uniform(0,self.maxReward)
+      randomNumber2 = rand.uniform(randomNumber1,self.maxReward)
+      rewardRange.append(randomNumber1)
+      rewardRange.append(randomNumber2)
+      fakeArms.append(rewardRange)
+    return (fakeArms)
+  
+  def GetMakespan(self,arm):
+    return rand.uniform(self.fakeRewards[arm][0],self.fakeRewards[arm][1])
+
+Arms = Arm(10,10)
+st.write(Arm.GetMakespan(Arms,3))
 
 #retorna uma recompensa falsa como se fosse o operador genetico
-def fakePull(arm):
-  return rand.uniform(fakeRewards[arm][0],fakeRewards[arm][1])
-
-def mab(bracos,execucoes,epsilon):
-  #cria uma variavel para a primeira iteração
-  firstInteraction = True
-  #instancia array de recompensas determinando cada braço
-  rewards = [0] * bracos
-  choicesArms = [0] * bracos
-  allRewards = [[] for _ in range(bracos)]
-  #Em cada execução ele gera um numero aleatorio conforme o 
-  # epsilon e armazena a soma em rewards[]
-  for i in range(execucoes):
-    randomNumber = rand.uniform(0,epsilon)
-    if firstInteraction:
-      armChoosen = rand.randint(0,bracos-1)
-      firstInteraction = False
-    else:
-      if randomNumber < epsilon:
-        armChoosen = rand.randint(0,bracos-1)
+class MAB:
+  def __init__(self,Arms,bracos,execucoes,epsilon):
+     self.Arms = Arms
+     self.bracos = bracos
+     self.execucoes = execucoes
+     self.epsilon = epsilon
+     
+  def execute(self):
+    #cria uma variavel para a primeira iteração
+    firstInteraction = True
+    #instancia array de recompensas determinando cada braço
+    rewards = [0] * self.bracos
+    choicesArms = [0] * self.bracos
+    allRewards = [[] for _ in range(self.bracos)]
+    #Em cada execução ele gera um numero aleatorio conforme o 
+    # epsilon e armazena a soma em rewards[]
+    for i in range(self.execucoes):
+      randomNumber = rand.uniform(0,self.epsilon)
+      if firstInteraction:
+        armChoosen = rand.randint(0,self.bracos-1)
+        firstInteraction = False
       else:
-        armChoosen = np.argmax(rewards)
-    tempReward = fakePull(armChoosen)
-    tempSum =(rewards[armChoosen] +tempReward)/2
-    #Guarda media das recompensas
-    rewards[armChoosen] = tempSum
-    #Guarda quantas vezes braço foi puxado
-    choicesArms[armChoosen] += 1
-    #Guarda todas as recompensas coletadas
-    allRewards[armChoosen].append(tempSum)
-  return(rewards,choicesArms,allRewards)
-        
+        if randomNumber < self.epsilon:
+          armChoosen = rand.randint(0,self.bracos-1)
+        else:
+          armChoosen = np.argmax(rewards)
+      tempReward = Arm.GetMakespan(self.Arms,armChoosen)
+      tempSum =(rewards[armChoosen] +tempReward)/2
+      #Guarda media das recompensas
+      rewards[armChoosen] = tempSum
+      #Guarda quantas vezes braço foi puxado
+      choicesArms[armChoosen] += 1
+      #Guarda todas as recompensas coletadas
+      allRewards[armChoosen].append(tempSum)
+    return(rewards,choicesArms,allRewards)
+
+mabClass = MAB(Arms,10,10,0.5)
+st.code(MAB.execute(mabClass))
         
 
 #streamlit
@@ -71,14 +91,14 @@ def mostraTabela(bracosDisponiveis):
     'Braço referente': coluna1,
     'Valor minimo': coluna2,
     'Valor maximo': coluna3,
-}).set_index(['Braço referente']))
+  }).set_index(['Braço referente']))
 
 def pieChart(choices):
-  st.write("### Media, Moda, Mediana dos braços")
+  st.write("### Gráfico de pizza de porcentagem de escolha")
   df = pd.DataFrame(choices).T
   df.columns = [f"Braço {i+1}" for i in range(len(choices))]
   df.index.name = "Execução"
-  st.dataframe(df)
+
   # Define a custom function to format the value labels
   def format_autopct(value):
       if value == 0:
@@ -108,15 +128,35 @@ def frequency(choices,allrewards):
   df = pd.DataFrame(allrewards).T
   df.columns = [f"Braço {i+1}" for i in range(len(allrewards))]
   df.index.name = "Execução"
+
   st.line_chart(df)
 
-def averages(choices):
-  st.write("### Média,Moda,Mediana das Escolhas")
-  df = pd.DataFrame(choices).T
-  df.columns = [f"Braço {i+1}" for i in range(len(choices))]
-  df.index.name = "Execução"
-  
-  st.dataframe(df)
+def averages(rewards,allRewards):
+ # transforma em int para encontrar moda media e mediana
+  allRewards = [[int(val) for val in sublist] for sublist in allRewards]
+  modas = []
+  for j in range(len(allRewards)):
+      if allRewards[j]:
+          modas.append(statistics.mode(allRewards[j]))
+      else:
+          modas.append(None)
+  medianas = [statistics.median(lst) if len(lst) > 0 else None for lst in allRewards]
+  std_devs = []
+  for j in range(len(allRewards)):
+      if len(allRewards[j]) >= 2:
+          std_devs.append(statistics.stdev(allRewards[j]))
+      else:
+          std_devs.append(None)
+  st.write("### Média,Moda,Mediana e desvio padrão das recompensas")
+  df = pd.DataFrame(rewards).T
+  df.columns = [f"Braço {i+1}" for i in range(len(rewards))]
+  df.index.name = "Braços"
+  df = df.rename(index={0: "Média"})
+  df.loc["Mediana"] = medianas
+  df.loc["Moda"] = modas
+  df.loc["Desvio Padrão"] = std_devs
+  df.loc["Regret"] = 'esss'
+  st.write(df)
 
 
 st.sidebar.title("Configurar MAB")
@@ -125,10 +165,13 @@ st.title("MAB em funcionamento")
 execucoes = st.sidebar.number_input("numeros de execuções",min_value= 1,step=1)
 maxReward = st.sidebar.number_input("Maximo de recompensa",min_value= 1,step=1)
 quantidadeBracos = st.sidebar.number_input("Quantidade de braços",min_value= 1,step=1)
+
+
 if st.sidebar.button("Executar mab com braços com ranges aleatórios"):
   fakeRewards = fakeArm(quantidadeBracos,maxReward)            
   rewards,choicesArms,allRewards = mab(quantidadeBracos,execucoes,epsilon)
   mostraTabela(fakeRewards)
+  averages(rewards,allRewards)
   frequency(choicesArms,allRewards)
   pieChart(choicesArms)
-  averages(choicesArms)
+  

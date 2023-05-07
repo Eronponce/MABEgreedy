@@ -9,14 +9,14 @@ import random as rand
 #Percore pelo numero de braços criando falsos braços, onde cada   
 # um tem um range possivel de recompensar o usuário
 class Arm:
-  def __init__(self,bracos,maxReward):
-    self.bracos = bracos
+  def __init__(self,armQuantity,maxReward):
+    self.armQuantity = armQuantity
     self.maxReward = maxReward
     self.fakeRewards = []
       
   def CreateArms(self):
     fakeArms = []
-    for i in range(self.bracos):
+    for i in range(self.armQuantity):
       rewardRange = []
       randomNumber1 = rand.uniform(0,self.maxReward)
       randomNumber2 = rand.uniform(randomNumber1,self.maxReward)
@@ -32,10 +32,10 @@ class Arm:
 
 #retorna uma recompensa falsa como se fosse o operador genetico
 class EgreedyMAB:
-  def __init__(self,Arms,bracos,execucoes,epsilon,maxReward):
-    self.bracos = bracos
+  def __init__(self,Arms,armQuantity,executions,epsilon,maxReward):
+    self.armQuantity = armQuantity
     self.Arms = Arms
-    self.execucoes = execucoes
+    self.executions = executions
     self.epsilon = epsilon
     self.maxReward = maxReward
      
@@ -44,17 +44,17 @@ class EgreedyMAB:
     #cria uma variavel para a primeira iteração
     firstInteraction = True
     #instancia array de recompensas determinando cada braço
-    rewards = [0] * self.bracos
-    choicesArms = [0] * self.bracos
-    regret = [[] for _ in range(self.bracos)] 
-    allRewards = [[] for _ in range(self.bracos)]
+    rewards = [0] * self.armQuantity
+    choicesArms = [0] * self.armQuantity
+    regret = [[] for _ in range(self.armQuantity)] 
+    allRewards = [[] for _ in range(self.armQuantity)]
     
     #Em cada execução ele gera um numero aleatorio conforme o 
     # epsilon e armazena a soma em rewards[]
-    for i in range(self.execucoes):
+    for i in range(self.executions):
       randomNumber = rand.uniform(0,1)
       if firstInteraction:
-        armChoosen = rand.randint(0,self.bracos-1)
+        armChoosen = rand.randint(0,self.armQuantity-1)
         firstInteraction = False
       else:
         if randomNumber > self.epsilon:  
@@ -64,9 +64,9 @@ class EgreedyMAB:
           armChoosen = rand.randrange(len(rewards))
 
         # calculate regret for each arm
-      expected_rewards = [rewards[i] if choicesArms[i] > 0 else 0 for i in range(self.bracos)]
+      expected_rewards = [rewards[i] if choicesArms[i] > 0 else 0 for i in range(self.armQuantity)]
       best_reward = max(expected_rewards)
-      for i in range(self.bracos):
+      for i in range(self.armQuantity):
         if i == armChoosen:
           regret[i].append(best_reward - expected_rewards[i])
 
@@ -79,7 +79,7 @@ class EgreedyMAB:
       choicesArms[armChoosen] += 1
       #Guarda todas as recompensas coletadas
       
-      for i in range(self.bracos):
+      for i in range(self.armQuantity):
         
         if i == armChoosen:
           allRewards[armChoosen].append(tempSum)
@@ -89,12 +89,12 @@ class EgreedyMAB:
     return(rewards,choicesArms,allRewards,regret,fakeRewards)
   
 #mostra a tabela com as escolha dos braços
-def mostraTabela(bracosDisponiveis):
+def mostraTabela(armQuantity):
   coluna1= []
   coluna2 = []
   coluna3 = []
   contador = 0
-  for i in bracosDisponiveis:
+  for i in armQuantity:
     contador += 1
     coluna1.append(str(f"braço {contador}°")) 
     coluna2.append(i[0])
@@ -141,13 +141,13 @@ def frequency(allRewards):
 def averages(rewards,allRewards,regret):
  # transforma em int para encontrar moda media e mediana
   allRewards = [[int(val) for val in sublist] for sublist in allRewards]
-  modas = []
+  mode = []
   for j in range(len(allRewards)):
       if allRewards[j]:
-          modas.append(statistics.mode(allRewards[j]))
+          mode.append(statistics.mode(allRewards[j]))
       else:
-          modas.append(None)
-  medianas = [statistics.median(lst) if len(lst) > 0 else None for lst in allRewards]
+          mode.append(None)
+  median = [statistics.median(lst) if len(lst) > 0 else None for lst in allRewards]
   std_devs = []
   for j in range(len(allRewards)):
       if len(allRewards[j]) >= 2:
@@ -159,28 +159,28 @@ def averages(rewards,allRewards,regret):
   df.columns = [f"Braço {i+1}" for i in range(len(rewards))]
   df.index.name = "Braços"
   df = df.rename(index={0: "Média"})
-  df.loc["Mediana"] = medianas
-  df.loc["Moda"] = modas
+  df.loc["Mediana"] = median
+  df.loc["Moda"] = mode
   df.loc["Desvio Padrão"] = std_devs
-  regretSomado =[]
-  for valores in regret:
-    regretSomado.append(sum(valores))
-  df.loc["Regret"] = regretSomado
+  sumRegret =[]
+  for values in regret:
+    sumRegret.append(sum(values))
+  df.loc["Regret"] = sumRegret
   st.dataframe(df)
 
 
 st.sidebar.title("Configurar MAB")
 epsilon =  st.sidebar.slider("Epsilon",0.01,1.0)
 st.title("MAB em funcionamento")
-execucoes = st.sidebar.number_input("numeros de execuções",min_value= 1,step=1)
+executions = st.sidebar.number_input("numeros de execuções",min_value= 1,step=1)
 maxReward = st.sidebar.number_input("Maximo de recompensa",min_value= 1,step=1)
-quantidadeBracos = st.sidebar.number_input("Quantidade de braços",min_value= 1,step=1)
+armQuantity = st.sidebar.number_input("Quantidade de braços",min_value= 1,step=1)
 
 
 if st.sidebar.button("Executar mab com braços com ranges aleatórios"):
-  Arms = Arm(quantidadeBracos,maxReward)  
+  Arms = Arm(armQuantity,maxReward)  
   fakeRewards = Arm.CreateArms(Arms)   
-  mabClass = EgreedyMAB(Arms,quantidadeBracos,execucoes,epsilon,maxReward)
+  mabClass = EgreedyMAB(Arms,armQuantity,executions,epsilon,maxReward)
   rewards,choicesArms,allRewards,regret,fakeRewards = EgreedyMAB.execute(mabClass)
   mostraTabela(fakeRewards)
   averages(rewards,allRewards,regret)

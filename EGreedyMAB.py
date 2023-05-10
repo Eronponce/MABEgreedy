@@ -159,10 +159,10 @@ def averages(rewards,allRewards,regret):
           std_devs.append(statistics.stdev(allRewards[j]))
       else:
           std_devs.append(None)
-  std_devs = []
-  for l in range(len(np.sum(allRewards[j])):
+  execution_Time = []
+  for l in range(len(allRewards[j])):
       if len(allRewards[l]) >= 2:
-          std_devs.append()
+          execution_Time.append(len(allRewards[j]))
       else:
           std_devs.append(None) 
   st.write("### Média,Moda,Mediana, regret padrão das recompensas e desvio ")
@@ -173,6 +173,7 @@ def averages(rewards,allRewards,regret):
   df.loc["Mediana"] = median
   df.loc["Moda"] = mode
   df.loc["Desvio Padrão"] = std_devs
+  df.loc["Vezes de execução"] = execution_Time
   sumRegret =[]
   for values in regret:
     sumRegret.append(sum(values))

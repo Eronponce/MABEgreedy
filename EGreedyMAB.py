@@ -141,7 +141,6 @@ def frequency(allRewards):
   df = pd.DataFrame(allRewards).T
   df.columns = [f"Braço {i+1}" for i in range(len(allRewards))]
   df.index.name = "Execução"
-  df = df.iloc[0]
   st.line_chart(df)
   
 

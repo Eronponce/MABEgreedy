@@ -139,7 +139,9 @@ def pieChart(choices):
 def frequency(allRewards):
   st.write("### Frequência de recompensas")
   df = pd.DataFrame(allRewards).T
-  df.columns = [f"Braço {i+1}" for i in range(len(allRewards))]
+  l = [f"Braço {i+1}" for i in range(len(allRewards))]
+  sorted(l)
+  df.columns = sorted(l)
   df.index.name = "Execução"
   st.line_chart(df)
 

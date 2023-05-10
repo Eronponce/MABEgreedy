@@ -48,7 +48,7 @@ class EgreedyMAB:
     choicesArms = [0] * self.armQuantity
     regret = [[] for _ in range(self.armQuantity)] 
     allRewards = [[] for _ in range(self.armQuantity)]
-    
+    execution_times = [0] * self.armQuantity
     #Em cada execução ele gera um numero aleatorio conforme o 
     # epsilon e armazena a soma em rewards[]
     for i in range(self.executions):
@@ -69,10 +69,10 @@ class EgreedyMAB:
       for i in range(self.armQuantity):
         if i == armChoosen:
           regret[i].append(best_reward - expected_rewards[i])
-
+      
       tempReward = Arm.GetMakespan(self.Arms,armChoosen)
       tempSum =(rewards[armChoosen] +tempReward)/2
-
+      execution_times[armChoosen] +=1
       #Guarda media das recompensas
       rewards[armChoosen] = tempSum
       #Guarda quantas vezes braço foi puxado
@@ -86,7 +86,7 @@ class EgreedyMAB:
         else:
          
           allRewards[i].append((rewards[i]))
-    return(rewards,choicesArms,allRewards,regret,fakeRewards)
+    return(rewards,choicesArms,allRewards,regret,fakeRewards,execution_times)
   
 
 
@@ -143,7 +143,7 @@ def frequency(allRewards):
   df.index.name = "Execução"
   st.line_chart(df)
 
-def averages(rewards,allRewards,regret):
+def averages(rewards,allRewards,regret,execution_times):
  # transforma em int para encontrar moda media e mediana
   allRewards = [[int(val) for val in sublist] for sublist in allRewards]
   mode = []
@@ -159,9 +159,7 @@ def averages(rewards,allRewards,regret):
           std_devs.append(statistics.stdev(allRewards[j]))
       else:
           std_devs.append(None)
-  execution_Time = []
-  for l in range(len(allRewards)):
-    execution_Time.append(len(allRewards[l]))
+  
   st.write("### Média,Moda,Mediana, regret padrão das recompensas e desvio ")
   df = pd.DataFrame(rewards).T
   df.columns = [f"Braço {i+1}" for i in range(len(rewards))]
@@ -170,7 +168,7 @@ def averages(rewards,allRewards,regret):
   df.loc["Mediana"] = median
   df.loc["Moda"] = mode
   df.loc["Desvio Padrão"] = std_devs
-  df.loc["Vezes de execução"] = execution_Time
+  df.loc["Vezes de execução"] = execution_times
   sumRegret =[]
   for values in regret:
     sumRegret.append(sum(values))
@@ -190,9 +188,9 @@ if st.sidebar.button("Executar mab com braços com ranges aleatórios"):
   Arms = Arm(armQuantity,maxReward)  
   fakeRewards = Arm.CreateArms(Arms)   
   mabClass = EgreedyMAB(Arms,armQuantity,executions,epsilon,maxReward)
-  rewards,choicesArms,allRewards,regret,fakeRewards = EgreedyMAB.execute(mabClass)
+  rewards,choicesArms,allRewards,regret,fakeRewards,execution_times = EgreedyMAB.execute(mabClass)
   mostraTabela(fakeRewards)
-  averages(rewards,allRewards,regret)
+  averages(rewards,allRewards,regret,execution_times)
   frequency(allRewards)
   pieChart(choicesArms)
   

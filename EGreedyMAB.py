@@ -160,7 +160,7 @@ def averages(rewards,allRewards,regret):
       else:
           std_devs.append(None)
   execution_Time = []
-  for l in range(len(allRewards[l])):
+  for l in range(len(allRewards)):
     execution_Time.append(len(allRewards[l]))
   st.write("### Média,Moda,Mediana, regret padrão das recompensas e desvio ")
   df = pd.DataFrame(rewards).T

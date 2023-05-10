@@ -141,7 +141,7 @@ def frequency(allRewards):
   df = pd.DataFrame(allRewards).T
   df.columns = [f"Braço {i+1}" for i in range(len(allRewards))]
   df.index.name = "Execução"
-  st.line_chart(df[1])
+  st.dataframe(df)
 
 def averages(rewards,allRewards,regret,execution_times):
  # transforma em int para encontrar moda media e mediana

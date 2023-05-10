@@ -88,7 +88,10 @@ class EgreedyMAB:
           allRewards[i].append((rewards[i]))
     return(rewards,choicesArms,allRewards,regret,fakeRewards)
   
-  #transpor 
+
+
+
+
 #mostra a tabela com as escolha dos braços
 def mostraTabela(armQuantity):
   coluna1= []
@@ -156,7 +159,7 @@ def averages(rewards,allRewards,regret):
           std_devs.append(statistics.stdev(allRewards[j]))
       else:
           std_devs.append(None)
-  st.write("### Média,Moda,Mediana e desvio padrão das recompensas")
+  st.write("### Média,Moda,Mediana, regret padrão das recompensas e desvio ")
   df = pd.DataFrame(rewards).T
   df.columns = [f"Braço {i+1}" for i in range(len(rewards))]
   df.index.name = "Braços"
@@ -168,7 +171,7 @@ def averages(rewards,allRewards,regret):
   for values in regret:
     sumRegret.append(sum(values))
   df.loc["Regret"] = sumRegret
-  st.dataframe(df)
+  st.dataframe(np.transpose(df))
 
 
 st.sidebar.title("Configurar MAB")

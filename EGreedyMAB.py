@@ -139,11 +139,9 @@ def pieChart(choices):
 def frequency(allRewards):
   st.write("### Frequência de recompensas")
   df = pd.DataFrame(allRewards).T
-  l = [f"Braço {i+1}" for i in range(len(allRewards))]
-  l2 = sorted(l)
-  df.columns = l2   
+  df.columns = [f"Braço {i+1}" for i in range(len(allRewards))]
   df.index.name = "Execução"
-  st.line_chart(df)
+  st.line_chart(df[1])
 
 def averages(rewards,allRewards,regret,execution_times):
  # transforma em int para encontrar moda media e mediana

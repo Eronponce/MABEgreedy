@@ -125,7 +125,7 @@ def pieChart(choices):
   # Create the pie chart
   fig1, ax1 = plt.subplots(facecolor='none')
   
-  colours1 = ['cyan','#6699fc','#f0a1a2','#fd266f','#7defa1','#ffd16a','yellow','orange','purple']
+  colours1 = ['#26C6DA','#6699fc','#f0a1a2','#fd266f','#7defa1','#ffd16a','#C0CA33','orange','purple']
   
   ax1.pie(non_zero_choices, labels=non_zero_labels, autopct=format_autopct, textprops={'color': 'white'}, colors=colours1,wedgeprops={"edgecolor":"k",'linewidth': 1,'linestyle': '-'})
   ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.

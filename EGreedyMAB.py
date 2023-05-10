@@ -140,8 +140,8 @@ def frequency(allRewards):
   st.write("### Frequência de recompensas")
   df = pd.DataFrame(allRewards).T
   l = [f"Braço {i+1}" for i in range(len(allRewards))]
-  sorted(l)
-  df.columns = sorted(l)
+  l2 = sorted(l)
+  df.columns = l2   
   df.index.name = "Execução"
   st.line_chart(df)
 

@@ -159,6 +159,12 @@ def averages(rewards,allRewards,regret):
           std_devs.append(statistics.stdev(allRewards[j]))
       else:
           std_devs.append(None)
+  std_devs = []
+  for l in range(len(np.sum(allRewards[j])):
+      if len(allRewards[l]) >= 2:
+          std_devs.append()
+      else:
+          std_devs.append(None) 
   st.write("### Média,Moda,Mediana, regret padrão das recompensas e desvio ")
   df = pd.DataFrame(rewards).T
   df.columns = [f"Braço {i+1}" for i in range(len(rewards))]

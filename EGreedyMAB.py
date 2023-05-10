@@ -88,6 +88,7 @@ class EgreedyMAB:
           allRewards[i].append((rewards[i]))
     return(rewards,choicesArms,allRewards,regret,fakeRewards)
   
+  #transpor 
 #mostra a tabela com as escolha dos braços
 def mostraTabela(armQuantity):
   coluna1= []
@@ -122,15 +123,16 @@ def pieChart(choices):
   non_zero_choices = [choice for choice in choices if choice != 0]
   non_zero_labels = [label for choice, label in zip(choices, df.columns) if choice != 0]
   # Create the pie chart
-  fig1, ax1 = plt.subplots(facecolor='white')
+  fig1, ax1 = plt.subplots(facecolor='none')
   
   colours1 = ['cyan','#6699fc','#f0a1a2','#fd266f','#7defa1','#ffd16a','yellow','orange','purple']
   
-  ax1.pie(non_zero_choices, labels=non_zero_labels, autopct=format_autopct, textprops={'color': 'black'}, colors=colours1,wedgeprops={"edgecolor":"k",'linewidth': 1,'linestyle': '-'})
+  ax1.pie(non_zero_choices, labels=non_zero_labels, autopct=format_autopct, textprops={'color': 'white'}, colors=colours1,wedgeprops={"edgecolor":"k",'linewidth': 1,'linestyle': '-'})
   ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
   st.pyplot(fig1)
-  
+
+# mostrar individual por drop   
 def frequency(allRewards):
   st.write("### Frequência de recompensas")
   df = pd.DataFrame(allRewards).T

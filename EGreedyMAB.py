@@ -161,7 +161,7 @@ def averages(rewards,allRewards,regret,execution_times):
       else:
           std_devs.append(None)
   
-  st.write("### Média,Moda,Mediana, regret padrão das recompensas e desvio ")
+  st.write("### Média, Mediana, Moda, desvio padrão, vezes de execuções e regret das recompensas ")
   df = pd.DataFrame(rewards).T
   df.columns = [f"Braço {i+1}" for i in range(len(rewards))]
   df.index.name = "Braços"

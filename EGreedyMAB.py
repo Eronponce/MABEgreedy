@@ -25,12 +25,12 @@ class Arm:
       fakeArms.append(rewardRange)
     self.fakeRewards =fakeArms
     return(fakeArms)
-
+  
+  #retorna uma recompensa falsa como se fosse o operador genetico
   def GetMakespan(self,arm):
     return rand.uniform(self.fakeRewards[arm][0],self.fakeRewards[arm][1])
   
 
-#retorna uma recompensa falsa como se fosse o operador genetico
 class EgreedyMAB:
   def __init__(self,Arms,armQuantity,executions,epsilon,maxReward):
     self.armQuantity = armQuantity
@@ -161,7 +161,7 @@ def averages(rewards,allRewards,regret,execution_times):
       else:
           std_devs.append(None)
   
-  st.write("### Média, Mediana, Moda, desvio padrão, vezes de execuções e regret das recompensas ")
+  st.write("### média, mediana, moda, desvio padrão, vezes de execuções e arrependimento das recompensas ")
   df = pd.DataFrame(rewards).T
   df.columns = [f"Braço {i+1}" for i in range(len(rewards))]
   df.index.name = "Braços"
@@ -173,7 +173,7 @@ def averages(rewards,allRewards,regret,execution_times):
   sumRegret =[]
   for values in regret:
     sumRegret.append(sum(values))
-  df.loc["Regret"] = sumRegret
+  df.loc["Arrependimento"] = sumRegret
   st.dataframe(np.transpose(df))
 
 

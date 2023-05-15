@@ -8,12 +8,12 @@ import statistics
 
 
 #mostra a tabela com as escolha dos braços
-def mostraTabela(armQuantity):
+def mostraTabela(arm_quantity):
   coluna1= []
   coluna2 = []
   coluna3 = []
   contador = 0
-  for i in armQuantity:
+  for i in arm_quantity:
     contador += 1
     coluna1.append(str(f"braço {contador}°")) 
     coluna2.append(i[0])
@@ -51,28 +51,28 @@ def pieChart(choices):
   st.pyplot(fig1)
 
 # mostrar individual por drop   
-def frequency(allRewards):
+def frequency(all_rewards):
   st.write("### Frequência de recompensas")
-  df = pd.DataFrame(allRewards).T
-  df.columns = [f"Braço {i+1}" for i in range(len(allRewards))]
+  df = pd.DataFrame(all_rewards).T
+  df.columns = [f"Braço {i+1}" for i in range(len(all_rewards))]
   df.index.name = "Execução"
   st.line_chart(df)
   
 
-def averages(rewards,allRewards,regret,execution_times):
+def averages(rewards,all_rewards,regret,execution_times):
  # transforma em int para encontrar moda media e mediana
-  allRewards = [[int(val) for val in sublist] for sublist in allRewards]
+  all_rewards = [[int(val) for val in sublist] for sublist in all_rewards]
   mode = []
-  for j in range(len(allRewards)):
-      if allRewards[j]:
-          mode.append(statistics.mode(allRewards[j]))
+  for j in range(len(all_rewards)):
+      if all_rewards[j]:
+          mode.append(statistics.mode(all_rewards[j]))
       else:
           mode.append(None)
-  median = [statistics.median(lst) if len(lst) > 0 else None for lst in allRewards]
+  median = [statistics.median(lst) if len(lst) > 0 else None for lst in all_rewards]
   std_devs = []
-  for j in range(len(allRewards)):
-      if len(allRewards[j]) >= 2:
-          std_devs.append(statistics.stdev(allRewards[j]))
+  for j in range(len(all_rewards)):
+      if len(all_rewards[j]) >= 2:
+          std_devs.append(statistics.stdev(all_rewards[j]))
       else:
           std_devs.append(None)
   
@@ -85,10 +85,10 @@ def averages(rewards,allRewards,regret,execution_times):
   df.loc["Moda"] = mode
   df.loc["Desvio Padrão"] = std_devs
   df.loc["Vezes de execução"] = execution_times
-  sumRegret =[]
+  sum_regret =[]
   for values in regret:
-    sumRegret.append(sum(values))
-  df.loc["Arrependimento"] = sumRegret
+    sum_regret.append(sum(values))
+  df.loc["Arrependimento"] = sum_regret
   st.dataframe(np.transpose(df))
 
 
@@ -97,18 +97,18 @@ st.sidebar.title("Configurar MAB")
 epsilon =  st.sidebar.slider("Epsilon",0.01,1.0)
 st.title("MAB em funcionamento")
 executions = st.sidebar.number_input("numeros de execuções",min_value= 1,step=1)
-maxReward = st.sidebar.number_input("Maximo de recompensa",min_value= 1,step=1)
-armQuantity = st.sidebar.number_input("Quantidade de braços",min_value= 1,step=1)
+max_reward = st.sidebar.number_input("Maximo de recompensa",min_value= 1,step=1)
+arm_quantity = st.sidebar.number_input("Quantidade de braços",min_value= 1,step=1)
 
 
 
 if st.sidebar.button("Executar mab com braços com ranges aleatórios"):
-  Arms = Arm(armQuantity,maxReward)  
-  fakeRewards = Arm.CreateArms(Arms)   
-  mabClass = EgreedyMAB(Arms,armQuantity,executions,epsilon,maxReward)
-  rewards,choicesArms,allRewards,regret,execution_times = EgreedyMAB.execute(mabClass)
-  mostraTabela(fakeRewards)
-  averages(rewards,allRewards,regret,execution_times)
-  frequency(allRewards)
-  pieChart(choicesArms)
+  Arms = Arm(arm_quantity,max_reward)  
+  fake_rewards = Arm.CreateArms(Arms)   
+  mab_class = EgreedyMAB(Arms,arm_quantity,executions,epsilon,max_reward)
+  rewards,choices_arms,all_rewards,regret,execution_times = EgreedyMAB.execute(mab_class)
+  mostraTabela(fake_rewards)
+  averages(rewards,all_rewards,regret,execution_times)
+  frequency(all_rewards)
+  pieChart(choices_arms)
   

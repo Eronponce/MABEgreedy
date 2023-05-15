@@ -2,61 +2,61 @@ import numpy as np
 import random as rand
 
 class EgreedyMAB:
-  def __init__(self,Arms,armQuantity,executions,epsilon,maxReward):
-    self.armQuantity = armQuantity
+  def __init__(self,Arms,arm_quantity,executions,epsilon,max_reward):
+    self.arm_quantity = arm_quantity
     self.Arms = Arms
     self.executions = executions
     self.epsilon = epsilon
-    self.maxReward = maxReward
+    self.max_reward = max_reward
      
 
   def execute(self):
     #cria uma variavel para a primeira iteração
-    firstInteraction = True
+    first_interaction = True
     #instancia array de recompensas determinando cada braço
-    rewards = [0] * self.armQuantity
-    choicesArms = [0] * self.armQuantity
-    regret = [[] for _ in range(self.armQuantity)] 
-    allRewards = [[] for _ in range(self.armQuantity)]
-    execution_times = [0] * self.armQuantity
+    rewards = [0] * self.arm_quantity
+    choices_arms = [0] * self.arm_quantity
+    regret = [[] for _ in range(self.arm_quantity)] 
+    all_rewards = [[] for _ in range(self.arm_quantity)]
+    execution_times = [0] * self.arm_quantity
     #Em cada execução ele gera um numero aleatorio conforme o 
     # epsilon e armazena a soma em rewards[]
     for i in range(self.executions):
-      randomNumber = rand.uniform(0,1)
-      if firstInteraction:
-        armChoosen = rand.randint(0,self.armQuantity-1)
-        firstInteraction = False
+      random_number = rand.uniform(0,1)
+      if first_interaction:
+        arm_choosen = rand.randint(0,self.arm_quantity-1)
+        first_interaction = False
       else:
-        if randomNumber > self.epsilon:  
-          armChoosen = np.argmax(rewards)
+        if random_number > self.epsilon:  
+          arm_choosen = np.argmax(rewards)
         else:
     
-          armChoosen = rand.randrange(len(rewards))
+          arm_choosen = rand.randrange(len(rewards))
 
         # calculate regret for each arm
-      expected_rewards = [rewards[i] if choicesArms[i] > 0 else 0 for i in range(self.armQuantity)]
+      expected_rewards = [rewards[i] if choices_arms[i] > 0 else 0 for i in range(self.arm_quantity)]
       best_reward = max(expected_rewards)
-      for i in range(self.armQuantity):
-        if i == armChoosen:
+      for i in range(self.arm_quantity):
+        if i == arm_choosen:
           regret[i].append(best_reward - expected_rewards[i])
       
-      tempReward = self.Arms.GetMakespan(armChoosen)
-      tempSum =(rewards[armChoosen] +tempReward)/2
-      execution_times[armChoosen] +=1
+      temp_reward = self.Arms.GetMakespan(arm_choosen)
+      temp_sum =(rewards[arm_choosen] +temp_reward)/2
+      execution_times[arm_choosen] +=1
       #Guarda media das recompensas
-      rewards[armChoosen] = tempSum
+      rewards[arm_choosen] = temp_sum
       #Guarda quantas vezes braço foi puxado
-      choicesArms[armChoosen] += 1
+      choices_arms[arm_choosen] += 1
       #Guarda todas as recompensas coletadas
       
-      for i in range(self.armQuantity):
+      for i in range(self.arm_quantity):
         
-        if i == armChoosen:
-          allRewards[armChoosen].append(tempSum)
+        if i == arm_choosen:
+          all_rewards[arm_choosen].append(temp_sum)
         else:
          
-          allRewards[i].append((rewards[i]))
-    return(rewards,choicesArms,allRewards,regret,execution_times)
+          all_rewards[i].append((rewards[i]))
+    return(rewards,choices_arms,all_rewards,regret,execution_times)
   
 
 

@@ -2,12 +2,11 @@ import numpy as np
 import random as rand
 
 class EgreedyMAB:
-  def __init__(self,Arms,arm_quantity,executions,epsilon,max_reward):
+  def __init__(self,Arms,arm_quantity,executions,epsilon):
     self.arm_quantity = arm_quantity
     self.Arms = Arms
     self.executions = executions
     self.epsilon = epsilon
-    self.max_reward = max_reward
      
 
   def execute(self):
@@ -57,7 +56,3 @@ class EgreedyMAB:
          
           all_rewards[i].append((rewards[i]))
     return(rewards,choices_arms,all_rewards,regret,execution_times)
-  
-
-
-

@@ -5,6 +5,23 @@ import matplotlib.pyplot as plt
 from EGreedyMAB import EgreedyMAB
 from Arm import Arm
 import statistics
+import mysql.connector
+from mysql.connector import Error
+
+def create_db_connection(host_name, user_name, user_password, db_name):
+    connection = None
+    try:
+        connection = mysql.connector.connect(
+            host=host_name,
+            user=user_name,
+            passwd=user_password,
+            database=db_name
+        )
+        print("MySQL Database connection successful")
+    except Error as err:
+        print(f"Error: '{err}'")
+
+    return connection
 
 
 #mostra a tabela com as escolha dos braços
@@ -49,6 +66,7 @@ def pieChart(choices):
   ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
   st.pyplot(fig1)
+  return (non_zero_choices )
 
 # mostrar individual por drop   
 def frequency(all_rewards):
@@ -90,25 +108,110 @@ def averages(rewards,all_rewards,regret,execution_times):
     sum_regret.append(sum(values))
   df.loc["Arrependimento"] = sum_regret
   st.dataframe(np.transpose(df))
+  return (std_devs,median,mode,execution_times,sum_regret)
+
+connection = create_db_connection("localhost", "root", "root", "teste2")
+cursor= connection.cursor()
+cursor.execute("SELECT Name FROM Execution")
 
 
+options =  [row[0] for row in cursor.fetchall()]
+
+options.append("Novo")
 
 st.sidebar.title("Configurar MAB")
-epsilon =  st.sidebar.slider("Epsilon",0.01,1.0)
+instance = st.sidebar.selectbox("Selecione a instância",options)
+send = False
+replace = False
+delete = False
+if instance == 'Novo':
+  #input para colocar o nomes da nova instancia
+  executions_times_value = 1
+  epsilon_value = 0.1
+  arm_quantity_value = 1
+  intance_name = st.sidebar.text_input("Escreva o nome da nova instância")
+  author_name = st.sidebar.text_input("Escreva o nome do autor")
+  send = st.sidebar.button("Guardar Instância")
+else:
+  # carrega os parametros na tabela
+  cursor.execute("Select * from Execution where Name = %s" ,([instance]))
+  parameters = cursor.fetchone()
+  st.write(parameters)
+  executions_times_value = parameters[4]
+  epsilon_value = parameters[5]
+  arm_quantity_value = parameters[6]
+  delete = st.sidebar.button("Deletar Instância")
+  replace = st.sidebar.button("Atualizar instância")
+
+
+
+epsilon =  st.sidebar.slider("Epsilon",0.01,1.0,value=epsilon_value)
 st.title("MAB em funcionamento")
-executions = st.sidebar.number_input("numeros de execuções",min_value= 1,step=1)
-max_reward = st.sidebar.number_input("Maximo de recompensa",min_value= 1,step=1)
-arm_quantity = st.sidebar.number_input("Quantidade de braços",min_value= 1,step=1)
+executions = st.sidebar.number_input("numeros de execuções",value=executions_times_value, min_value= 1, max_value =10000, step=1)
+arm_quantity = st.sidebar.number_input("Quantidade de braços",value = arm_quantity_value,min_value= 1,max_value =50 ,step=1)
+
 
 
 
 if st.sidebar.button("Executar mab com braços com ranges aleatórios"):
-  Arms = Arm(arm_quantity,max_reward)  
+  st.write(instance)
+  Arms = Arm(arm_quantity)  
   fake_rewards = Arm.CreateArms(Arms)   
-  mab_class = EgreedyMAB(Arms,arm_quantity,executions,epsilon,max_reward)
+  mab_class = EgreedyMAB(Arms,arm_quantity,executions,epsilon)
   rewards,choices_arms,all_rewards,regret,execution_times = EgreedyMAB.execute(mab_class)
   mostraTabela(fake_rewards)
-  averages(rewards,all_rewards,regret,execution_times)
+  std_devs,median,mode,execution_times,sum_regret = averages(rewards,all_rewards,regret,execution_times)
   frequency(all_rewards)
-  pieChart(choices_arms)
+  times_choosen = pieChart(choices_arms)
   
+if send:
+
+  insert_query = """
+    INSERT INTO `execution` (`Name`, `Author`, `MabName`, `IterationTimes`, `Epsilon`,`ArmQuantity`)
+    VALUES (%s, %s, %s, %s, %s, %s)
+  """
+
+  # Define the data to be inserted
+  execution_data = (
+    intance_name,  
+    author_name, 
+    "Epsilon Greedy",  
+    executions,  
+    epsilon,  
+    arm_quantity
+  )
+
+  cursor.execute(insert_query,execution_data)
+  connection.commit()
+  st.experimental_rerun()
+
+if replace:
+  insert_query = """
+  UPDATE `teste2`.`execution`
+  SET `IterationTimes` = %s,
+  `Epsilon` = %s,
+  `ArmQuantity` = %s
+  WHERE `Name` = %s;
+  """ 
+
+  # Define the data to be inserted
+  execution_data = (
+    executions,  
+    epsilon,  
+    arm_quantity,
+    instance
+  )
+
+  cursor.execute(insert_query,execution_data)
+  connection.commit()
+  st.experimental_rerun()
+
+if delete:
+  insert_query = """DELETE FROM  `teste2`.`execution`
+  WHERE `Name` = %s;
+  """
+  # Define the data to be inserted
+  execution_data = [instance]
+  cursor.execute(insert_query,execution_data)
+  connection.commit()
+  st.experimental_rerun()

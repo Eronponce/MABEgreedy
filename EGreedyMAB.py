@@ -43,7 +43,7 @@ class EgreedyMAB:
       temp_sum =(rewards[arm_choosen] +temp_reward)/2
       execution_times[arm_choosen] +=1
       #Guarda media das recompensas
-      rewards[arm_choosen] = temp_sum
+      rewards[arm_choosen] = int(temp_sum)
       #Guarda quantas vezes braço foi puxado
       choices_arms[arm_choosen] += 1
       #Guarda todas as recompensas coletadas

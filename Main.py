@@ -7,6 +7,7 @@ from Arm import Arm
 import statistics
 import mysql.connector
 from mysql.connector import Error
+from sqlalchemy import create_engine
 
 def create_db_connection(host_name, user_name, user_password, db_name):
     connection = None
@@ -16,8 +17,7 @@ def create_db_connection(host_name, user_name, user_password, db_name):
             user=user_name,
             passwd=user_password,
             database=db_name
-        )
-        print("MySQL Database connection successful")
+        ) 
     except Error as err:
         print(f"Error: '{err}'")
 
@@ -87,6 +87,10 @@ def averages(rewards,all_rewards,regret,execution_times):
       else:
           mode.append(None)
   median = [statistics.median(lst) if len(lst) > 0 else None for lst in all_rewards]
+  optimal_solution = []
+  for j in range(len(all_rewards)):
+     optimal_solution.append(np.max(all_rewards[j]))
+      
   std_devs = []
   for j in range(len(all_rewards)):
       if len(all_rewards[j]) >= 2:
@@ -94,7 +98,7 @@ def averages(rewards,all_rewards,regret,execution_times):
       else:
           std_devs.append(None)
   
-  st.write("### média, mediana, moda, desvio padrão, vezes de execuções e arrependimento das recompensas ")
+  st.write("### média, mediana, moda, desvio padrão, vezes de execuções, arrependimento e maior recompensa de cada braço")
   df = pd.DataFrame(rewards).T
   df.columns = [f"Braço {i+1}" for i in range(len(rewards))]
   df.index.name = "Braços"
@@ -102,13 +106,14 @@ def averages(rewards,all_rewards,regret,execution_times):
   df.loc["Mediana"] = median
   df.loc["Moda"] = mode
   df.loc["Desvio Padrão"] = std_devs
-  df.loc["Vezes de execução"] = execution_times
+  df.loc["Execuções"] = execution_times
   sum_regret =[]
   for values in regret:
     sum_regret.append(sum(values))
   df.loc["Arrependimento"] = sum_regret
+  df.loc[">Recompensa"] = optimal_solution
   st.dataframe(np.transpose(df))
-  return (std_devs,median,mode,execution_times,sum_regret)
+  return (std_devs,median,mode,execution_times,sum_regret,optimal_solution)
 
 connection = create_db_connection("localhost", "root", "root", "teste2")
 cursor= connection.cursor()
@@ -136,37 +141,71 @@ else:
   # carrega os parametros na tabela
   cursor.execute("Select * from Execution where Name = %s" ,([instance]))
   parameters = cursor.fetchone()
-  st.write(parameters)
-  executions_times_value = parameters[4]
-  epsilon_value = parameters[5]
-  arm_quantity_value = parameters[6]
+
+  executions_times_value = parameters[5]
+  epsilon_value = parameters[6]
+  arm_quantity_value = parameters[7]
   delete = st.sidebar.button("Deletar Instância")
   replace = st.sidebar.button("Atualizar instância")
 
 
-
 epsilon =  st.sidebar.slider("Epsilon",0.01,1.0,value=epsilon_value)
-st.title("MAB em funcionamento")
 executions = st.sidebar.number_input("numeros de execuções",value=executions_times_value, min_value= 1, max_value =10000, step=1)
 arm_quantity = st.sidebar.number_input("Quantidade de braços",value = arm_quantity_value,min_value= 1,max_value =50 ,step=1)
 
+st.title("MAB em funcionamento")
 
 
+if instance != 'Novo':
+  if st.sidebar.button("Executar mab com braços com ranges aleatórios"):
+  
+    Arms = Arm(arm_quantity)  
+    fake_rewards = Arm.CreateArms(Arms)   
+    mab_class = EgreedyMAB(Arms,arm_quantity,executions,epsilon)
+    rewards,choices_arms,all_rewards,regret,execution_times = EgreedyMAB.execute(mab_class)
+    mostraTabela(fake_rewards)
+    std_devs,median,mode,execution_times,sum_regret,optimal_solution = averages(rewards,all_rewards,regret,execution_times)
+    frequency(all_rewards)
+    times_choosen = pieChart(choices_arms)  
+  
 
-if st.sidebar.button("Executar mab com braços com ranges aleatórios"):
-  st.write(instance)
-  Arms = Arm(arm_quantity)  
-  fake_rewards = Arm.CreateArms(Arms)   
-  mab_class = EgreedyMAB(Arms,arm_quantity,executions,epsilon)
-  rewards,choices_arms,all_rewards,regret,execution_times = EgreedyMAB.execute(mab_class)
-  mostraTabela(fake_rewards)
-  std_devs,median,mode,execution_times,sum_regret = averages(rewards,all_rewards,regret,execution_times)
-  frequency(all_rewards)
-  times_choosen = pieChart(choices_arms)
+    if instance != "Novo":
+      # Get the id of execution
+      cursor.execute("Select id from Execution where Name = %s" ,([instance]))
+      id_execution = cursor.fetchone()
+      #delete older values
+      delete_query = """DELETE FROM  `teste2`.`results`
+      WHERE `ExecutionId` = %s;
+      """
+      cursor.execute(delete_query,id_execution)
+
+      #insert new values
+      for i in range(arm_quantity):
+        
+        insert_query_results = """
+        INSERT INTO `Results` (`Arm`,`Average`, `OptimalSolutions`, `StandartDeviation`, `Regret`, `Mode`,`Median`,`PercentageChoose`,`ExecutionId`)
+          VALUES (%s,%s, %s, %s, %s, %s, %s,%s,%s)
+        """
+
+        # Define the data to be inserted
+        execution_data = (
+          int(i+1),
+          float(rewards[i]),  
+          float(optimal_solution[i]), 
+          float(std_devs[i]),  
+          float(sum_regret[i]),  
+          int(mode[i]),  
+          float(median[i]),
+          float(choices_arms[i]),
+          str(id_execution[0])
+        )
+        cursor.execute(insert_query_results,execution_data)
+  
+  
   
 if send:
 
-  insert_query = """
+  insert_query_execution = """
     INSERT INTO `execution` (`Name`, `Author`, `MabName`, `IterationTimes`, `Epsilon`,`ArmQuantity`)
     VALUES (%s, %s, %s, %s, %s, %s)
   """
@@ -181,12 +220,15 @@ if send:
     arm_quantity
   )
 
-  cursor.execute(insert_query,execution_data)
+  # Define the data to be inserted
+  cursor.execute(insert_query_execution,execution_data)
   connection.commit()
   st.experimental_rerun()
 
+
+
 if replace:
-  insert_query = """
+  replace_query = """
   UPDATE `teste2`.`execution`
   SET `IterationTimes` = %s,
   `Epsilon` = %s,
@@ -202,16 +244,26 @@ if replace:
     instance
   )
 
-  cursor.execute(insert_query,execution_data)
+  cursor.execute(replace_query,execution_data)
   connection.commit()
   st.experimental_rerun()
+  
 
 if delete:
-  insert_query = """DELETE FROM  `teste2`.`execution`
+  #Get the id of execution
+  cursor.execute("Select id from Execution where Name = %s" ,([instance]))
+  id_execution = cursor.fetchone()
+  #delete older values
+  delete_query = """DELETE FROM  `teste2`.`results`
+  WHERE `ExecutionId` = %s;
+  """
+  cursor.execute(delete_query,id_execution)
+
+  delete_query = """DELETE FROM  `teste2`.`execution`
   WHERE `Name` = %s;
   """
   # Define the data to be inserted
   execution_data = [instance]
-  cursor.execute(insert_query,execution_data)
+  cursor.execute(delete_query,execution_data)
   connection.commit()
   st.experimental_rerun()

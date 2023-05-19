@@ -8,6 +8,7 @@ import statistics
 import mysql.connector
 from mysql.connector import Error
 from sqlalchemy import create_engine
+import json
 
 def create_db_connection(host_name, user_name, user_password, db_name):
     connection = None
@@ -115,6 +116,41 @@ def averages(rewards,all_rewards,regret,execution_times):
   st.dataframe(np.transpose(df))
   return (std_devs,median,mode,execution_times,sum_regret,optimal_solution)
 
+
+def averages2(rewards,all_rewards,regret,execution_times):
+ # transforma em int para encontrar moda media e mediana
+  all_rewards = [[int(val) for val in sublist] for sublist in all_rewards]
+  mode = []
+  for j in range(len(all_rewards)):
+      if all_rewards[j]:
+          mode.append(statistics.mode(all_rewards[j]))
+      else:
+          mode.append(None)
+  median = [statistics.median(lst) if len(lst) > 0 else None for lst in all_rewards]
+  optimal_solution = []
+  for j in range(len(all_rewards)):
+     optimal_solution.append(np.max(all_rewards[j]))
+      
+  std_devs = []
+  for j in range(len(all_rewards)):
+      if len(all_rewards[j]) >= 2:
+          std_devs.append(statistics.stdev(all_rewards[j]))
+      else:
+          std_devs.append(None)
+  
+  st.write("### média, mediana, moda, desvio padrão, vezes de execuções, arrependimento e maior recompensa de cada braço")
+  df = pd.DataFrame(rewards).T
+  df.columns = [f"Braço {i+1}" for i in range(len(rewards))]
+  df.index.name = "Braços"
+  df = df.rename(index={0: "Média"})
+  df.loc["Mediana"] = median
+  df.loc["Moda"] = mode
+  df.loc["Desvio Padrão"] = std_devs
+  df.loc["Execuções"] = execution_times
+  df.loc["Arrependimento"] = regret
+  df.loc[">Recompensa"] = optimal_solution
+  st.dataframe(np.transpose(df))
+  
 connection = create_db_connection("localhost", "root", "root", "teste2")
 cursor= connection.cursor()
 cursor.execute("SELECT Name FROM Execution")
@@ -131,9 +167,9 @@ replace = False
 delete = False
 if instance == 'Novo':
   #input para colocar o nomes da nova instancia
-  executions_times_value = 1
-  epsilon_value = 0.1
-  arm_quantity_value = 1
+  executions_times_value = 10
+  epsilon_value = 0.01
+  arm_quantity_value = 2
   intance_name = st.sidebar.text_input("Escreva o nome da nova instância")
   author_name = st.sidebar.text_input("Escreva o nome do autor")
   send = st.sidebar.button("Guardar Instância")
@@ -144,64 +180,127 @@ else:
 
   executions_times_value = parameters[5]
   epsilon_value = parameters[6]
-  arm_quantity_value = parameters[7]
+  arm_quantity_value = parameters[8]
   delete = st.sidebar.button("Deletar Instância")
   replace = st.sidebar.button("Atualizar instância")
 
 
 epsilon =  st.sidebar.slider("Epsilon",0.01,1.0,value=epsilon_value)
-executions = st.sidebar.number_input("numeros de execuções",value=executions_times_value, min_value= 1, max_value =10000, step=1)
-arm_quantity = st.sidebar.number_input("Quantidade de braços",value = arm_quantity_value,min_value= 1,max_value =50 ,step=1)
+executions = st.sidebar.number_input("numeros de execuções",value=executions_times_value, min_value= 10, max_value =10000, step=1)
+arm_quantity = st.sidebar.number_input("Quantidade de braços",value = arm_quantity_value,min_value= 2,max_value =50 ,step=1)
+
 
 st.title("MAB em funcionamento")
+# Get the id of execution
+cursor.execute("Select id from Execution where Name = %s" ,([instance]))
+id_execution = cursor.fetchone()
+
+shown = False
+average = []
+optimal_solution = []
+std_devs = []
+regret = []
+mode = []
+median = []
+PercentageChoose = []
+Arms = Arm(arm_quantity)  
+fake_rewards = Arm.CreateArms(Arms)   
+
+try:
+  cursor.execute("Select AllReward from execution where Name = %s" ,([instance]))
+  all_rewards_json = cursor.fetchone()
+  all_rewards = json.loads(all_rewards_json[0])
+
+  for i in range(arm_quantity):
+    select_query_results = """
+    SELECT Average, OptimalSolutions, StandartDeviation, Regret, Mode, Median, PercentageChoose, ExecutionId
+    FROM results
+    WHERE Arm = %s and ExecutionId =%s
+    """
+
+    # Define the data to be inserted
+
+    execution_data = (i+1,int(id_execution[0]))
+    
+    cursor.execute(select_query_results, execution_data)
+    results = cursor.fetchall()
+    # Process the retrieved data
+    for row in results:
+        average.append(row[0])
+        optimal_solution.append(row[1])
+        std_devs.append(row[2])
+        regret.append(row[3])
+        mode.append(row[4])
+        median.append(row[5])
+        PercentageChoose.append(row[6])
+
+        # Process the data as needed
+        # ...
+    connection.commit()
+  if results == []:
+    st.title("Execute uma vez")
+  else:
+
+    shown = True
+    averages2(average,all_rewards,regret,PercentageChoose)
+    frequency(all_rewards)
+    times_choosen = pieChart(PercentageChoose)  
+except:
+   st.write("sem resultados")
 
 
 if instance != 'Novo':
   if st.sidebar.button("Executar mab com braços com ranges aleatórios"):
-  
-    Arms = Arm(arm_quantity)  
-    fake_rewards = Arm.CreateArms(Arms)   
+    st.empty()
+    
     mab_class = EgreedyMAB(Arms,arm_quantity,executions,epsilon)
     rewards,choices_arms,all_rewards,regret,execution_times = EgreedyMAB.execute(mab_class)
+    if shown == True:
+      st.title("Ultima execução")
     mostraTabela(fake_rewards)
     std_devs,median,mode,execution_times,sum_regret,optimal_solution = averages(rewards,all_rewards,regret,execution_times)
     frequency(all_rewards)
     times_choosen = pieChart(choices_arms)  
-  
+    # Get the id of execution
+    cursor.execute("Select id from Execution where Name = %s" ,([instance]))
+    id_execution = cursor.fetchone()
+    #delete older values
+    delete_query = """DELETE FROM  `teste2`.`results`
+    WHERE `ExecutionId` = %s;
+    """
+    cursor.execute(delete_query,id_execution)
 
-    if instance != "Novo":
-      # Get the id of execution
-      cursor.execute("Select id from Execution where Name = %s" ,([instance]))
-      id_execution = cursor.fetchone()
-      #delete older values
-      delete_query = """DELETE FROM  `teste2`.`results`
-      WHERE `ExecutionId` = %s;
+    #insert new values
+    for i in range(arm_quantity):
+      
+      insert_query_results = """
+      INSERT INTO `results` (`Arm`,`Average`, `OptimalSolutions`, `StandartDeviation`, `Regret`, `Mode`,`Median`,`PercentageChoose`,`ExecutionId`)
+        VALUES (%s,%s, %s, %s, %s, %s, %s,%s,%s)
       """
-      cursor.execute(delete_query,id_execution)
 
-      #insert new values
-      for i in range(arm_quantity):
-        
-        insert_query_results = """
-        INSERT INTO `Results` (`Arm`,`Average`, `OptimalSolutions`, `StandartDeviation`, `Regret`, `Mode`,`Median`,`PercentageChoose`,`ExecutionId`)
-          VALUES (%s,%s, %s, %s, %s, %s, %s,%s,%s)
-        """
+      # Define the data to be inserted
+      execution_data = (
+        int(i+1),
+        float(rewards[i]),  
+        float(optimal_solution[i]), 
+        float(std_devs[i]),  
+        float(sum_regret[i]),  
+        int(mode[i]),  
+        float(median[i]),
+        float(choices_arms[i]),
+        str(id_execution[0])
+      )
+      cursor.execute(insert_query_results,execution_data)
+      connection.commit()
+      
+      insert_query_execution = """UPDATE `teste2`.`execution` SET `allReward` = %s WHERE `Name` = %s  """
+      # Define the data to be inserted
+      execution_data = (json.dumps(all_rewards),instance  )
 
-        # Define the data to be inserted
-        execution_data = (
-          int(i+1),
-          float(rewards[i]),  
-          float(optimal_solution[i]), 
-          float(std_devs[i]),  
-          float(sum_regret[i]),  
-          int(mode[i]),  
-          float(median[i]),
-          float(choices_arms[i]),
-          str(id_execution[0])
-        )
-        cursor.execute(insert_query_results,execution_data)
-  
-  
+      # Define the data to be inserted
+      cursor.execute(insert_query_execution,execution_data)
+      connection.commit()
+      
   
 if send:
 

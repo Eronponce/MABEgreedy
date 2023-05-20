@@ -2,13 +2,14 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from EGreedyMAB import EgreedyMAB
-from Arm import Arm
 import statistics
 import mysql.connector
 from mysql.connector import Error
 from sqlalchemy import create_engine
 import json
+from EGreedyMAB import EgreedyMAB
+from Arm import Arm
+
 def ExecuteAlgorithm():
   def create_db_connection(host_name, user_name, user_password, db_name):
       connection = None

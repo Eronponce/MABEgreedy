@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import statistics
 import mysql.connector
 from mysql.connector import Error
-from sqlalchemy import create_engine
 import json
 from EGreedyMAB import EgreedyMAB
 from Arm import Arm
@@ -152,7 +151,7 @@ def ExecuteAlgorithm():
     df.loc[">Recompensa"] = optimal_solution
     st.dataframe(np.transpose(df))
     
-  connection = create_db_connection("localhost", "root", "root", "teste2")
+  connection = create_db_connection("localhost", "root", "root", "EstagioIA")
   cursor= connection.cursor()
   cursor.execute("SELECT Name FROM Execution")
 
@@ -266,7 +265,7 @@ def ExecuteAlgorithm():
       cursor.execute("Select id from Execution where Name = %s" ,([instance]))
       id_execution = cursor.fetchone()
       #delete older values
-      delete_query = """DELETE FROM  `teste2`.`results`
+      delete_query = """DELETE FROM  `EstagioIA`.`results`
       WHERE `ExecutionId` = %s;
       """
       cursor.execute(delete_query,id_execution)
@@ -294,7 +293,7 @@ def ExecuteAlgorithm():
         cursor.execute(insert_query_results,execution_data)
         connection.commit()
         
-        insert_query_execution = """UPDATE `teste2`.`execution` SET `allReward` = %s WHERE `Name` = %s  """
+        insert_query_execution = """UPDATE `EstagioIA`.`execution` SET `allReward` = %s WHERE `Name` = %s  """
         # Define the data to be inserted
         execution_data = (json.dumps(all_rewards),instance  )
 
@@ -329,7 +328,7 @@ def ExecuteAlgorithm():
 
   if replace:
     replace_query = """
-    UPDATE `teste2`.`execution`
+    UPDATE `EstagioIA`.`execution`
     SET `IterationTimes` = %s,
     `Epsilon` = %s,
     `ArmQuantity` = %s
@@ -354,12 +353,12 @@ def ExecuteAlgorithm():
     cursor.execute("Select id from Execution where Name = %s" ,([instance]))
     id_execution = cursor.fetchone()
     #delete older values
-    delete_query = """DELETE FROM  `teste2`.`results`
+    delete_query = """DELETE FROM  `EstagioIA`.`results`
     WHERE `ExecutionId` = %s;
     """
     cursor.execute(delete_query,id_execution)
 
-    delete_query = """DELETE FROM  `teste2`.`execution`
+    delete_query = """DELETE FROM  `EstagioIA`.`execution`
     WHERE `Name` = %s;
     """
     # Define the data to be inserted
